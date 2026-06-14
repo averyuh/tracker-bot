@@ -3,6 +3,8 @@ mod tracker;
 use crate::tracker::{Tracker, TrackerConfig};
 use log::{error, info};
 use poise::serenity_prelude as serenity;
+#[cfg(debug_assertions)]
+use std::str::FromStr;
 use std::{collections::HashMap, sync::Arc};
 
 static TRACKER_CONFIGS: &[TrackerConfig] = &[TrackerConfig {
@@ -26,10 +28,11 @@ impl Data {
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
+/// Search for different tracks from a spreadsheet.
 #[poise::command(slash_command, prefix_command)]
 async fn search(
     ctx: Context<'_>,
-    #[description = "Search Query"]
+    #[description = "Query"]
     #[rest]
     query: String,
 ) -> Result<(), Error> {
@@ -89,7 +92,19 @@ async fn main() -> anyhow::Result<()> {
         })
         .setup(|ctx, ready, framework| {
             Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                if cfg!(debug_assertions)
+                    && let Ok(guild) = std::env::var("DEV_GUILD")
+                {
+                    poise::builtins::register_in_guild(
+                        ctx,
+                        &framework.options().commands,
+                        serenity::GuildId::new(guild.parse()?),
+                    )
+                    .await?;
+                } else {
+                    poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                }
+
                 info!("Bot User \"{}\" is now ready.", ready.user.display_name());
                 Ok(Data::new(trackers))
             })
