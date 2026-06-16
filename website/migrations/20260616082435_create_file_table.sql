@@ -1,11 +1,9 @@
 CREATE TABLE file_blobs (
     id UUID PRIMARY KEY,
-    storage_path TEXT NOT NULL,
+    file_path TEXT NOT NULL,
 
     hash BYTEA NOT NULL,
-    size BIGINT NOT NULL,
-
-    file_type TEXT
+    size BIGINT NOT NULL
 );
 
 -- dedup lookup

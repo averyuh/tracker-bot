@@ -1,7 +1,7 @@
 use sqlx::{PgPool};
 use uuid::Uuid;
 
-use crate::uploads::models::File;
+use crate::uploads::models::{File, FileBlob, FileBlobRow};
 
 pub async fn find_file(
     db: &PgPool,
@@ -9,12 +9,36 @@ pub async fn find_file(
 ) -> Result<File, sqlx::Error> {
     let file = sqlx::query_as!(
         File,
-        "SELECT id, name FROM files WHERE id = $1",
+        r#"
+        SELECT *
+        FROM files
+        WHERE id = $1
+        "#,
         id
     )
-    .bind(id)
     .fetch_one(db)
     .await?;
 
     Ok(file)
+}
+
+
+
+pub async fn find_blob(
+    db: &PgPool,
+    id: Uuid,
+) -> anyhow::Result<FileBlob> {
+    let file = sqlx::query_as!(
+        FileBlobRow,
+        r#"
+        SELECT *
+        FROM file_blobs
+        WHERE id = $1
+        "#,
+        id
+    )
+    .fetch_one(db)
+    .await?;
+
+    file.try_into()
 }

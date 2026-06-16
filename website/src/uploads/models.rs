@@ -5,15 +5,50 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
+pub struct Hash32(pub [u8; 32]);
+
+impl TryFrom<Vec<u8>> for Hash32 {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Vec<u8>) -> anyhow::Result<Self> {
+        let arr: [u8; 32] = v
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("invalid hash length"))?;
+
+        Ok(Hash32(arr))
+    }
+}
+
+pub struct FileBlobRow {
+    pub id: Uuid,
+    pub file_path: String,
+    pub hash: Vec<u8>,
+    pub size: i64,
+}
+
+impl TryFrom<FileBlobRow> for FileBlob {
+    type Error = anyhow::Error;
+
+    fn try_from(row: FileBlobRow) -> anyhow::Result<Self> {
+        Ok(Self {
+            id: row.id,
+            file_path: row.file_path,
+            hash: row.hash.try_into()?,
+            size: row.size,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct FileBlob {
     pub id: Uuid,
     pub file_path: String,
-    pub hash: [u8; 32],
+    pub hash: Hash32, // Blake3 hash
     pub size: i64,
     /* TODO: Store file format
         make sure file format matches file extension of File.
         File format will be detected by magic string.
-    */ 
+    */
 }
 
 // TODO: Remove default
@@ -30,7 +65,7 @@ impl File {
     pub fn new(original_name: String, blob_id: Uuid) -> Self {
         Self {
             id: Uuid::now_v7(),
-            upload_id: nanoid!(8), 
+            upload_id: nanoid!(8),
             blob_id,
             original_name,
             created_at: OffsetDateTime::now_utc(),
