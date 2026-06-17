@@ -216,8 +216,6 @@ pub async fn file_page(
                                     }
                                 }
                             }
-
-                            span id="duration" class="time-display" { "0:00" }
                         }
                     }
                 }
